@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { isLoggedIn, logout } from "../services/auth";  // Added logout import
 import axios from "axios";
+import API from "../services/api";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const Chatbot = () => {
@@ -8,6 +11,11 @@ const Chatbot = () => {
   const [messages, setMessages] = useState([]);
   const chatEndref = useRef(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoggedIn()) navigate("/login");
+  }, []);
 
   const sendMessage = async () => {
     if (!goal.trim() || !skills.trim()) return;
@@ -20,19 +28,11 @@ const Chatbot = () => {
     setIsSubmitted(true);
 
     try {
-      const res = await axios.post(
-        "http://localhost:8080/api/chat",
-        { goal, skills },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const res = await API.post("/chat", { goal, skills });
       const botMessage = { text: res.data, sender: "bot" };
       setMessages((prev) => [...prev, botMessage]);
-      setGoal(""); 
-      setSkills("");   
+      setGoal("");
+      setSkills("");
       setIsSubmitted(false);
     } catch (error) {
       console.error("Error fetching response", error);
@@ -44,12 +44,22 @@ const Chatbot = () => {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   useEffect(() => {
     chatEndref.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
     <div className="container mt-5">
+      <div className="d-flex justify-content-end mb-2">
+        <button className="btn btn-danger" onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
       <div className="card shadow-lg">
         <div className="card-header bg-primary text-white text-center">
           <h4>Career Mentor</h4>
